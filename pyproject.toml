@@ -1,6 +1,6 @@
 [project]
 name = "mobile-price-service"
-version = "0.0.2"
+version = "0.1.2"
 description = "Homework"
 requires-python= ">=3.11,<3.13"
 
