@@ -36,11 +36,11 @@ class Features(BaseModel):
 
 class Prediction(BaseModel):
 
-    score:float
     mobile_price: float
     model_version:str
     request_id: str
     latency_ms: float
+    status_code: int
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -73,12 +73,20 @@ def predict(x: Features, bg: BackgroundTasks):
     payload = x.model_dump()
     frame = pd.DataFrame([payload]).reindex(columns=app.state.meta['features'])
 
-    score = float(app.state.pipeline.predict(frame)[0])
+    mobile_price = float(app.state.pipeline.predict(frame)[0])
 
     latency_ms = time.perf_counter() - t0
-    # позже, так как еще db не написанна
-    bg.add_task(db.save_prediction, request_id, payload, score, app.state.version, latency_ms)
 
-    mobile_price = score
+    # Пока костыль, чтобы позже написать полноценно рабочую логику
+    status_code = 200
+    bg.add_task(
+        db.save_prediction,
+        request_id=request_id,
+        features = payload,
+        mobile_price = mobile_price,
+        model_version = app.state.version,
+        latency_ms = latency_ms,
+        status_code = status_code)
 
-    return Prediction(score=score, mobile_price=mobile_price, model_version = app.state.version, request_id=request_id, latency_ms=latency_ms)
+
+    return Prediction(mobile_price=mobile_price, model_version = app.state.version, request_id=request_id, latency_ms=latency_ms, status_code = status_code)

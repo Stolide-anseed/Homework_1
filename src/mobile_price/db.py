@@ -21,12 +21,12 @@ def init() -> None:
     with psycopg.connect(settings.database_url) as conn:
         conn.execute(DDL)
 
-def save_prediction(request_id : str, features : dict, score : float, model_version : str, latency_ms : float) -> None:
+def save_prediction(request_id : str, features : dict, mobile_price:float, model_version : str, latency_ms : float, status_code: int) -> None:
     if not settings.database_url:
         return
     with psycopg.connect(settings.database_url) as conn:
             conn.execute(
-            "INSERT INTO predictions (request_id, model_version, features, score, latency_ms) "
+            "INSERT INTO predictions (request_id, model_version,mobile_price, features, latency_ms, status_code) "
             "VALUES (%s, %s, %s, %s, %s)",
-            (request_id, model_version, Json(features), score, latency_ms),
+            (request_id, model_version, Json(features), mobile_price, latency_ms, status_code),
         )
