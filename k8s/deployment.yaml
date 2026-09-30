@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mobile-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mobile_price
+  template:
+    metadata:
+      labels:
+        app: mobile_price
+    spec:
+      containers:
+        - name: api
+          image: mobile-service:1.1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          startupProbe:
+            httpGet: {path: /health, port: 8000}
+            failureThreshold: 30
+            periodSeconds: 2
+          livenessProbe:
+            httpGet: {path: /health, port: 8000}
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: /ready, port: 8000}
+            periodSeconds: 5
+          resources:
+            requests: {cpu: 100m, memory: 1024Mi}
+            limits: {cpu: "1", memory: 1Gi}

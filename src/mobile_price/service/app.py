@@ -10,6 +10,8 @@ from pydantic import BaseModel,Field
 from mobile_price.config import settings
 from mobile_price import db
 
+# curl ‐X POST localhost:8080/v1/predict ‐H "Content‐Type: application/json" ‐d @test.json
+
 class Features(BaseModel):
     model_config = {'extra':'forbid'}
 
