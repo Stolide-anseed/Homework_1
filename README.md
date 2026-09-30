@@ -50,3 +50,8 @@ curl ‐X POST localhost:8080/v1/predict ‐H "Content‐Type: application/json"
 
 4. Показываю, что кластеры работают с командой выше
 ![Работа кластера](<image_for_readme/Pasted image 20260930171444.png>)
+
+## Журнал ошибок:
+1. Не запускалась команда "uv run pytest". Причиной этой ошибки было опечатка в pyproject.toml [dependecy-groups] место [dependency-groups]. Решение: просто убрал опечатку и "uv run pytest" заработал
+2. Тесты останавливались на fixture 'client' not found , так как не было conftest.py. После его написания проверка на тестах заработала
+3. Pod’ы оставались Pending, а также Ready = 0. Происходило, так как в deployment.yaml и service.yaml была указана старая версия mobile-service:1.0, заместо основной mobile-service:1.1
