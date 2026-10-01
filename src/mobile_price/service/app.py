@@ -70,7 +70,7 @@ app = FastAPI(title="Mobile Price Prediction API", version="1.0", lifespan=lifes
 
 @app.get('/health')
 def health():
-    return {'status': 'ok', 'model_version': getattr(app.state, 'version', "unknown")}
+    return {'status': 'ok', 'model_version': getattr(app.state, 'version', "unknown"), 'service_version': '1.2'}
 
 @app.get('/ready')
 def ready():
