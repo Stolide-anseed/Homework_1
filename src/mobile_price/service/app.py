@@ -5,12 +5,11 @@ from contextlib import asynccontextmanager
 import joblib
 import pandas as pd
 from fastapi import BackgroundTasks, FastAPI, HTTPException
-from pydantic import BaseModel,Field
+from pydantic import BaseModel, Field
 
 from mobile_price.config import settings
 from mobile_price import db
 
-# curl ‐X POST localhost:8080/v1/predict ‐H "Content‐Type: application/json" ‐d @test.json
 
 class Features(BaseModel):
     model_config = {'extra':'forbid'}
@@ -36,9 +35,21 @@ class Features(BaseModel):
     touch_screen: int
     wifi:int
 
+
 class Prediction(BaseModel):
 
     mobile_price: float
+    model_version:str
+    request_id: str
+    latency_ms: float
+    status_code: int
+
+class BatchFeatures(BaseModel):
+    rows: list[Features] = Field(max_length=1000, min_length=1)
+
+class BatchPrediction(BaseModel):
+
+    mobile_price: list[float]
     model_version:str
     request_id: str
     latency_ms: float
@@ -77,10 +88,11 @@ def predict(x: Features, bg: BackgroundTasks):
 
     mobile_price = float(app.state.pipeline.predict(frame)[0])
 
-    latency_ms = time.perf_counter() - t0
+    latency_ms = (time.perf_counter() - t0) * 1000
 
-    # Пока костыль, чтобы позже написать полноценно рабочую логику
+    # 200, так как добавляются только успешно сработанные запросы
     status_code = 200
+
     bg.add_task(
         db.save_prediction,
         request_id=request_id,
@@ -92,3 +104,32 @@ def predict(x: Features, bg: BackgroundTasks):
 
 
     return Prediction(mobile_price=mobile_price, model_version = app.state.version, request_id=request_id, latency_ms=latency_ms, status_code = status_code)
+
+@app.post('/v1/predict/batch')
+def predict_batch(X : BatchFeatures, bg: BackgroundTasks):
+    t0 = time.perf_counter()
+
+    request_id = str(uuid.uuid4())
+    frame = pd.DataFrame([row.model_dump() for row in X.rows]).reindex(columns=app.state.meta['features'])
+
+    mobile_prices = app.state.pipeline.predict(frame).tolist()
+
+    latency_ms = (time.perf_counter() - t0) * 1000
+
+    # 200, так как добавляются только успешно сработанные запросы
+    status_code = 200
+
+    # По хорошему нужно сделать отдельную функцию для того, чтобы n-ое кол-во раз не взаимодействовать с базой
+
+    for price, x in zip(mobile_prices, X.rows):
+        bg.add_task(
+            db.save_prediction,
+            request_id=request_id,
+            features = x.model_dump(),
+            mobile_price = price,
+            model_version = app.state.version,
+            latency_ms = latency_ms,
+            status_code = status_code)
+
+
+    return BatchPrediction(mobile_price=mobile_prices, model_version = app.state.version, request_id=request_id, latency_ms=latency_ms, status_code = status_code)
