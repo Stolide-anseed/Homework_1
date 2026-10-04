@@ -1,6 +1,6 @@
 [project]
 name = "mobile-price-service"
-version = "0.2.0"
+version = "0.2.1"
 description = "Homework"
 requires-python= ">=3.11,<3.13"
 
@@ -33,3 +33,9 @@ module-name = 'mobile_price'
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
+
+[tool.ruff]
+line-length = 150
+
+[tool.ruff.lint]
+select = ["E", "F", "I", 'B', 'UP']
