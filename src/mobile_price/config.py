@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     model_path: str = 'artifacts/model.joblib'
     database_url: str | None = None
