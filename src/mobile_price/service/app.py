@@ -7,8 +7,8 @@ import pandas as pd
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from mobile_price.config import settings
 from mobile_price import db
+from mobile_price.config import settings
 
 
 class Features(BaseModel):
@@ -103,7 +103,14 @@ def predict(x: Features, bg: BackgroundTasks):
         status_code = status_code)
 
 
-    return Prediction(mobile_price=mobile_price, model_version = app.state.version, request_id=request_id, latency_ms=latency_ms, status_code = status_code)
+    return (
+            Prediction(
+                mobile_price=mobile_price,
+                model_version = app.state.version,
+                request_id=request_id,
+                latency_ms=latency_ms,
+                status_code = status_code)
+        )
 
 @app.post('/v1/predict/batch')
 def predict_batch(X : BatchFeatures, bg: BackgroundTasks):
@@ -121,7 +128,7 @@ def predict_batch(X : BatchFeatures, bg: BackgroundTasks):
 
     # По хорошему нужно сделать отдельную функцию для того, чтобы n-ое кол-во раз не взаимодействовать с базой
 
-    for price, x in zip(mobile_prices, X.rows):
+    for price, x in zip(mobile_prices, X.rows, strict=True):
         bg.add_task(
             db.save_prediction,
             request_id=request_id,
@@ -132,4 +139,12 @@ def predict_batch(X : BatchFeatures, bg: BackgroundTasks):
             status_code = status_code)
 
 
-    return BatchPrediction(mobile_price=mobile_prices, model_version = app.state.version, request_id=request_id, latency_ms=latency_ms, status_code = status_code)
+    return (
+        BatchPrediction(
+            mobile_price=mobile_prices,
+            model_version = app.state.version,
+            request_id=request_id,
+            latency_ms=latency_ms,
+            status_code = status_code
+        )
+    )
