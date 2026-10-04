@@ -1,14 +1,24 @@
 import time
 import uuid
+import logging
 from contextlib import asynccontextmanager
 
 import joblib
 import pandas as pd
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pydantic import BaseModel, Field
+from fastapi import Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.responses import JSONResponse
+from starlette.background import BackgroundTask
+
 
 from mobile_price.config import settings
 from mobile_price import db
+
+
+logger = logging.getLogger(__name__)
 
 
 class Features(BaseModel):
@@ -68,6 +78,60 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Mobile Price Prediction API", version="1.0", lifespan=lifespan)
 
+
+
+# для отлавливания ошибки до предикта
+@app.middleware("http")
+async def request_context(request: Request, call_next):
+    request.state.started_at = time.perf_counter()
+    request.state.request_id = str(uuid.uuid4())
+    request.state.features = {}
+
+    return await call_next(request)
+
+
+# для сохранения ошибки
+def save_error(request: Request, features: dict, status_code: int):
+    latency_ms = (
+        time.perf_counter() - request.state.started_at
+    ) * 1000
+
+    try:
+        db.save_prediction(
+            request_id=request.state.request_id,
+            features=features,
+            mobile_price=None,
+            model_version=getattr(app.state, "version", "unknown"),
+            latency_ms=latency_ms,
+            status_code=status_code,
+        )
+    except Exception:
+        logger.exception("Не удалось записать ошибочный запрос в базу")
+
+
+# обработчик 422
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(
+    request: Request,
+    exc: RequestValidationError,
+):
+    response = await request_validation_exception_handler(request, exc)
+
+    if request.url.path == "/v1/predict":
+        features = (
+            exc.body
+            if isinstance(exc.body, dict)
+            else {"raw_body": str(exc.body)}
+        )
+
+        response.background = BackgroundTask(
+            save_error, request, features, 422
+        )
+
+    return response
+
+
+
 @app.get('/health')
 def health():
     return {'status': 'ok', 'model_version': getattr(app.state, 'version', "unknown"), 'service_version': '1.2'}
@@ -80,10 +144,13 @@ def ready():
     return {'status': 'ok'}
 
 @app.post('/v1/predict')
-def predict(x: Features, bg: BackgroundTasks):
+def predict(x: Features, bg: BackgroundTasks, request: Request):
     t0 = time.perf_counter()
-    request_id = str(uuid.uuid4())
+    request_id = request.state.request_id
     payload = x.model_dump()
+
+    request.state.features = payload
+
     frame = pd.DataFrame([payload]).reindex(columns=app.state.meta['features'])
 
     mobile_price = float(app.state.pipeline.predict(frame)[0])
@@ -100,11 +167,13 @@ def predict(x: Features, bg: BackgroundTasks):
         mobile_price = mobile_price,
         model_version = app.state.version,
         latency_ms = latency_ms,
-        status_code = status_code)
+        status_code = status_code
+    )
 
 
     return Prediction(mobile_price=mobile_price, model_version = app.state.version, request_id=request_id, latency_ms=latency_ms, status_code = status_code)
 
+# для по батчевого предсказания
 @app.post('/v1/predict/batch')
 def predict_batch(X : BatchFeatures, bg: BackgroundTasks):
     t0 = time.perf_counter()
