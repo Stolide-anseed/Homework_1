@@ -87,7 +87,7 @@ jobs:
           kubectl rollout status deploy/mobile-service --timeout=120s
       - name: smoke
         run: |
-          kubectl port-forward src/movile-service 8080:80 &
+          kubectl port-forward svc/mobile-service 8080:80 &
           sleep 5
           
           curl --fail -s localhost:8080/health; echo
