@@ -46,7 +46,7 @@ jobs:
           tags: ${{ env.IMAGE }}
           cache-from: type=gha
           cache-to: type=gha, mode=max
-  delpoy:
+  deploy:
     needs: build
     runs-on: ubuntu-latest
 
@@ -71,32 +71,32 @@ jobs:
         env:
             DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-            kubectl create secret generic mobile-service \
+            kubectl create secret generic mobile-secrets \
             --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD" \
             --from-literal=DATABASE_URL="postgresql://postgres:$DB_PASSWORD@postgres:5432/mobile_price"
             
       - name: база
         run: |
           kubectl apply -f k8s/postgres.yaml 
-          kubectl rollout status detploy/postgres --timeout=180s
+          kubectl rollout status deploy/postgres --timeout=180s
           
       - name: сервис
         run: |
           kubectl apply -f k8s/ 
           kubectl set image deploy/mobile-service api="$IMAGE"
-          kubectl rollout status detploy/postgres --timeout=120s
+          kubectl rollout status deploy/mobile-service --timeout=120s
       - name: smoke
         run: |
           kubectl port-forward svc/movile-service 8080:80 &
           sleep 5
           
           curl --fail -s localhost:8080/health; echo
-          curl --fail -s -X localhost:8080/v1/predict \
+          curl --fail -s -X POST localhost:8080/v1/predict \
           -H "Content-Type: application/json" -d @test.json; echo
           
           sleep 2
           
-          kubectl exec deploy/postgres --psql -U -d mobile_price \
+          kubectl exec deploy/postgres -- psql -U postgres -d mobile_price \
             -tc "SELECT count(*) FROM predictions" | grep -q 1
       - name: диагностика
         if: failure()
@@ -106,9 +106,6 @@ jobs:
           kubectl describe deploy/mobile-service | tail -20
           kubectl logs deploy/mobile-service --tail=30 || true
           
-
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/build-push-action@v4
         with:
           context: .
           push: true
