@@ -67,17 +67,19 @@ jobs:
           docker pull "$IMAGE"
           kind load docker-image "$IMAGE" --name ci
 
-      - name: подтягивае секреты
+      - name: подтягиваем секреты
         env:
-          DB_PASSWORD: $ {{ secrets.DB_PASSWORD }}
+            DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
-          kubectl create secret generic mobile-service \
-          --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD"
-          --from-literal=DATABASE_URL="postgresql://postgres:$DB_PASSWORD@postgres:5432/mobile_price"
+            kubectl create secret generic mobile-service \
+            --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD" \
+            --from-literal=DATABASE_URL="postgresql://postgres:$DB_PASSWORD@postgres:5432/mobile_price"
+            
       - name: база
         run: |
           kubectl apply -f k8s/postgres.yaml 
           kubectl rollout status detploy/postgres --timeout=180s
+          
       - name: сервис
         run: |
           kubectl apply -f k8s/ 
