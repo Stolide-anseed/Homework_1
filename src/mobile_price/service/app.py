@@ -1,22 +1,18 @@
+import logging
 import time
 import uuid
-import logging
 from contextlib import asynccontextmanager
 
 import joblib
 import pandas as pd
-from fastapi import BackgroundTasks, FastAPI, HTTPException
-from pydantic import BaseModel, Field
-from fastapi import Request
-from fastapi.exceptions import RequestValidationError
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.exception_handlers import request_validation_exception_handler
-from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
-
 
 from mobile_price import db
 from mobile_price.config import settings
-
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +113,8 @@ async def validation_error_handler(
 ):
     response = await request_validation_exception_handler(request, exc)
 
+    response.headers["X-Request-ID"] = request.state.request_id
+
     if request.url.path == "/v1/predict":
         features = (
             exc.body
@@ -142,6 +140,7 @@ def ready():
         raise HTTPException(status_code=503, detail="Pipeline not loaded")
 
     return {'status': 'ok'}
+
 
 @app.post('/v1/predict')
 def predict(x: Features, bg: BackgroundTasks, request: Request):
