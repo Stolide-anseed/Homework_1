@@ -14,8 +14,10 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s --health-timeout 3s --health-retries 10
+
     env:
       DATABASE_URL: postgresql://postgres:test@localhost:5432/mobile_price
+
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
@@ -44,4 +46,70 @@ jobs:
           tags: ${{ env.IMAGE }}
           cache-from: type=gha
           cache-to: type=gha, mode=max
+  delpoy:
+    needs: tests
+    runs-on: ubuntu-latest
+
+    permissions: { contents: read, packages: read }
+
+    steps:
+      - uses: actions/checkout@v7
+      - run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}:sha-${GITHUB_SHA}" >> "$GITHUB_ENV"
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: helm/kind-action@v1
+        with: {cluster_name: ci}
+      - name: образ в кластер
+        run: |
+          docker pull "$IMAGE"
+          kind load docker-image "$IMAGE" --name ci
+
+      - name: подтягивае секреты
+        env:
+          DB_PASSWORD: $ {{ secrets.DB_PASSWORD }}
+        run: |
+          kubectl create secret generic mobile-service \
+          --from-literal=POSTGRES_PASSWORD="$DB_PASSWORD"
+          --from-literal=DATABASE_URL="postgresql://postgres:$DB_PASSWORD@postgres:5432/mobile_price"
+      - name: база
+        run: |
+          kubectl apply -f k8s/postgres.yaml 
+          kubectl rollout status detploy/postgres --timeout=180s
+      - name: сервис
+        run: |
+          kubectl apply -f k8s/ 
+          kubectl set image deploy/mobile-service api="$IMAGE"
+          kubectl rollout status detploy/postgres --timeout=120s
+      - name: smoke
+        run: |
+          kubectl port-forward svc/movile-service 8080:80 &
+          sleep 5
           
+          curl --fail -s localhost:8080/health; echo
+          curl --fail -s -X localhost:8080/v1/predict \
+          -H "Content-Type: application/json" -d @test.json; echo
+          
+          sleep 2
+          
+          kubectl exec deploy/postgres --psql -U -d mobile_price \
+            -tc "SELECT count(*) FROM predictions" | grep -q 1
+      - name: диагностика
+        if: failure()
+
+        run: |
+          kubectl get pods -o wide
+          kubectl describe deploy/mobile-service | tail -20
+          kubectl logs deploy/mobile-service --tail=30 || true
+          
+
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE }}
+          cache-from: type=gha
+          cache-to: type=gha, mode=max

@@ -2,7 +2,7 @@ def test_health(client):
     r = client.get("/health")
     assert r.status_code == 200
     assert "model_version" in r.json()
-
+    assert r.json()['path'] == 'artifacts/model.joblib'
 
 def test_ready(client):
     assert client.get("/ready").status_code == 200

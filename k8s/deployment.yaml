@@ -18,6 +18,9 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
+          envFrom:
+            - configMapRef: { name: mobile-config }
+            - secretRef: { name: mobile-secrets }
           startupProbe:
             httpGet: {path: /health, port: 8000}
             failureThreshold: 30
