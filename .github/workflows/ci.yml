@@ -105,10 +105,3 @@ jobs:
           kubectl get pods -o wide
           kubectl describe deploy/mobile-service | tail -20
           kubectl logs deploy/mobile-service --tail=30 || true
-          
-        with:
-          context: .
-          push: true
-          tags: ${{ env.IMAGE }}
-          cache-from: type=gha
-          cache-to: type=gha, mode=max
