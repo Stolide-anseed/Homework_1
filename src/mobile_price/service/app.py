@@ -132,7 +132,7 @@ async def validation_error_handler(
 
 @app.get('/health')
 def health():
-    return {'status': 'ok', 'model_version': getattr(app.state, 'version', "unknown"), 'service_version': '1.2'}
+    return {'status': 'ok', 'model_version': getattr(app.state, 'version', "unknown"), 'service_version': '1.2', 'path': settings.model_path}
 
 @app.get('/ready')
 def ready():
