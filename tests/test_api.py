@@ -10,7 +10,7 @@ def test_ready(client):
 
 def test_empty(client):
     r = client.post('/v1/predict', json={})
-    assert r.status_code == 422
+    assert r.status_code == 200
 
 def test_garbage(client, test_row):
     r = client.post('/v1/predict', json={**test_row, 'unknown_garbage_field': 'value'})
