@@ -90,9 +90,12 @@ jobs:
           kubectl port-forward svc/mobile-service 8080:80 &
           sleep 5
           
-          curl --fail -s localhost:8080/health; echo
+          curl --fail -s localhost:8080/health; 
+          echo
+          
           curl --fail -s -X POST localhost:8080/v1/predict \
-          -H "Content-Type: application/json" -d @test.json; echo
+          -H "Content-Type: application/json" -d @test.json \
+          | python3 -c "import json, sys; r=json.load(sys.stdin); assert 0 <= r['mobile_price'] <= 3, r"
           
           sleep 2
           
