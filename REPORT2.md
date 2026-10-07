@@ -49,4 +49,5 @@
 
 ### Диагностика богаче
 1. [Wrong_model_path_check](https://github.com/Stolide-anseed/Homework_1/actions/runs/37622637468)
-
+2. [Неправильный секрет](https://github.com/Stolide-anseed/Homework_1/actions/runs/37624533025/job/112803225141) - 67 строка показывает secret "..." not found
+3. 
