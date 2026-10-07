@@ -40,10 +40,10 @@
 ### Ускорение:
 1. Сравнение с кэшом и без:
 
-|              | tests | build | deploy |
-|--------------|-------|-------|--------|
-| [без кэша](https://github.com/Stolide-anseed/Homework_1/actions/runs/37614783246/attempts/1) | 39 s  | 63 s  | 105 s  |
-| [с кэшом](https://github.com/Stolide-anseed/Homework_1/actions/runs/37614783246)  | 35 s  | 21 s  | 114 s  |
+|                                                                                                   | tests | build | deploy |
+|---------------------------------------------------------------------------------------------------|-------|-------|--------|
+| [первый запуск](https://github.com/Stolide-anseed/Homework_1/actions/runs/37614783246/attempts/1) | 39 s  | 63 s  | 105 s  |
+| [повторный запуск](https://github.com/Stolide-anseed/Homework_1/actions/runs/37614783246)         | 35 s  | 21 s  | 114 s  |
 
 Из таблицы можем заметить, что очень сильно ускорилась job'a build, благодоря использованию кэша. Job'ы deploy и tests отличаются из-за погрешности и на них видимо никак не повлиял наличия кэша
 
@@ -51,3 +51,6 @@
 1. [Wrong_model_path_check](https://github.com/Stolide-anseed/Homework_1/actions/runs/37622637468)
 2. [Неправильный секрет](https://github.com/Stolide-anseed/Homework_1/actions/runs/37624533025/job/112803225141) - 67 строка показывает secret "..." not found
 3. [Большая память](https://github.com/Stolide-anseed/Homework_1/actions/runs/37626652742/job/112810591212) - 61 строка "1 Insufficient memory"
+
+### Тест на качество модели
+1. [красный тест и поднятый порог](https://github.com/Stolide-anseed/Homework_1/actions/runs/37633069805/job/112832089294), [зеленный тест без повышения порога](https://github.com/Stolide-anseed/Homework_1/actions/runs/37633176237/job/112832449683)
