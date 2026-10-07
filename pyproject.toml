@@ -12,7 +12,8 @@ dependencies = [
     "pandas",
     "scikit-learn>=1.6,<1.7",
     "joblib",
-    "psycopg[binary]"
+    "psycopg[binary]",
+    "ipykernel>=7.4.0",
 ]
 
 [dependency-groups]
