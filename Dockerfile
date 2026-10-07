@@ -14,7 +14,7 @@ COPY pyproject.toml uv.lock ./
 # --frozen - чтобы версии не менял
 # --no-instal-project - чтобы не устанвлял версии, как отдельный пакет
 # -- no-dev - не смотрел dev зависимости
-RUN uv sync --frozen --no-install-project
+RUN uv sync --frozen --no-install-project --no-dev
 
 COPY src/ src/
 
