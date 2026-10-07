@@ -106,5 +106,7 @@ jobs:
 
         run: |
           kubectl get pods -o wide
+          
+          
           kubectl describe deploy/mobile-service | tail -20
-          kubectl logs deploy/mobile-service --tail=30 || true
+          kubectl logs deploy/mobile-service --c api --previos --tail=100 || true
