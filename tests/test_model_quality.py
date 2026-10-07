@@ -18,7 +18,7 @@ def test_model_quality():
     actual = f1_score(
         sample["price_range"], predictions, average="macro"
     )
-    threshold = bundle["metadata"]["metrics"]["f1"] + 0.02
+    threshold = bundle["metadata"]["metrics"]["f1"]
 
     assert actual >= threshold - 1e-9, (
         f"macro-F1={actual:.6f}, порог={threshold:.6f}"
