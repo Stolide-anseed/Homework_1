@@ -5,8 +5,7 @@
 2. [Ссылка на страницу пакета образом](https://github.com/Stolide-anseed/Homework_1/pkgs/container/homework_1)
 
 ## 2.2 ветка и pull request
-1. [Красный прогон](https://github.com/Stolide-anseed/Homework_1/actions/runs/37489970200)
-2. [Зелённый прогон](https://github.com/Stolide-anseed/Homework_1/actions/runs/37490418906)
+1. [Pull request](https://github.com/Stolide-anseed/Homework_1/pull/6)
 
 ## 2.3 Три красных прогона с диагнозом
 ### 2.3.1 Configmap:
@@ -22,9 +21,9 @@
 4. Под находятся в состояние "CreateContainerConfigError"
 
 ### 2.3.3 Resources
-1. [Красный прогон](https://github.com/Stolide-anseed/Homework_1/actions/runs/37511785785) 
-2. [Зелённый прогон](https://github.com/Stolide-anseed/Homework_1/actions/runs/37512640281) 
-3. Красный job deploy. Ломается на шаге сервер, и ошибку обнаружить можно в нём же. Посмотреть и обнаружить "Invalid value: '992...07': must be less"
+1. [Красный прогон](https://github.com/Stolide-anseed/Homework_1/actions/runs/37626652742/job/112810591212) 
+2. [Зелённый прогон](https://github.com/Stolide-anseed/Homework_1/actions/runs/37633176237/job/112833509978) 
+3. Красный job deploy. Ломается на шаге сервер. На шаге «диагностика» видно событие FailedScheduling с сообщением Insufficient memory: запрос памяти контейнера превышает доступную память узла.
 4. Поды впринципе не создались
 
 ## 3 Вопросы:
@@ -54,3 +53,11 @@
 
 ### Тест на качество модели
 1. [красный тест и поднятый порог](https://github.com/Stolide-anseed/Homework_1/actions/runs/37633069805/job/112832089294), [зеленный тест без повышения порога](https://github.com/Stolide-anseed/Homework_1/actions/runs/37633176237/job/112832449683)
+
+## Журнал проблем:
+
+| Проблема                                    | Текст ошибки                                      | Как нашлёл причину                                                                     | 	Как исправил                                                                                                                                           |
+|---------------------------------------------|---------------------------------------------------|----------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Опечатка в команде rollout                  | the server doesn't have a resource type "detploy" | Посмотрели команду упавшего шага                                                       | Заменил detploy на deploy                                                                                                                               |
+| Отсутствовал срез данных для теста качества | FileNotFoundError: … tests/data/model_quality.csv | Файл существовал локально, но из-за правило data/ в .gitignore исключало и tests/data/ | Принудительно добавили конкретный CSV в Git и отправили в репозиторий                                                                                   |
+| Запрошенная память превышала лимит          | must be less than or equal to memory limit of 1Gi                                                  | Kubernetes отверг Deployment ещё при проверке манифеста                               | 	Для эксперимента повысили и request, и limit, чтобы манифест принимался(из-за этого не смог с первого раза правильно выполнить задание 2.3 на Ресурсы) |
