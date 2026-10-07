@@ -109,4 +109,4 @@ jobs:
           
           
           kubectl describe deploy/mobile-service | tail -20
-          kubectl logs deploy/mobile-service -c api --previos --tail=100 || true
+          kubectl logs deploy/mobile-service -c api --previous --tail=100 || true
